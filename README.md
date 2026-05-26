@@ -2,7 +2,7 @@
 
 A collection of Dart packages for running ONNX model and other high-performance AI inference. 
 
-Currently, it contains bindings to ONNX Runtime via FFI, with future plans to add high-level Chat APIs and abstractions for interacting with various models (including LLMs) directly in Dart.
+Currently, it contains bindings to ONNX Runtime via FFI, with future plans to add high-level Chat APIs and abstractions for interacting with various models (including LLMs) directly in Dart (currently on an experimental branch).
 
 ## Packages
 
