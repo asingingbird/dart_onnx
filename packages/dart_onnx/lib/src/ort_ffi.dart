@@ -76,6 +76,24 @@ class OrtFFI {
       }
     }
 
+    // Custom fork: bind to an ONNX Runtime ALREADY loaded into this process
+    // (e.g. by sherpa_onnx) instead of opening a second copy — a duplicate ORT
+    // image can crash the app. DynamicLibrary.process() resolves ORT symbols
+    // from the resident image when they're globally visible; fall back to
+    // re-opening the versioned lib by name (dlopen refcounts → same instance).
+    final proc = DynamicLibrary.process();
+    if (_hasOrtSymbols(proc)) return proc;
+    for (final name in const [
+      'libonnxruntime.1.24.4.dylib',
+      'libonnxruntime.dylib',
+      'libonnxruntime.so',
+    ]) {
+      try {
+        final lib = DynamicLibrary.open(name);
+        if (_hasOrtSymbols(lib)) return lib;
+      } catch (_) {}
+    }
+
     try {
       return _openPlatformLibrary();
     } on ArgumentError {
@@ -90,6 +108,16 @@ class OrtFFI {
         'For more information, visit:\n'
         'https://onnxruntime.ai/docs/install/',
       );
+    }
+  }
+
+  /// True if [lib] exposes the ORT entrypoint, i.e. it's a usable ONNX Runtime.
+  static bool _hasOrtSymbols(DynamicLibrary lib) {
+    try {
+      lib.lookup<Void>('OrtGetApiBase');
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 
