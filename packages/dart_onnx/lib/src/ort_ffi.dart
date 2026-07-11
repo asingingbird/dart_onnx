@@ -136,7 +136,14 @@ class OrtFFI {
         }
       }
     } else if (Platform.isIOS) {
-      return DynamicLibrary.open('libonnxruntime.dylib');
+      // iOS ships ONNX Runtime as `onnxruntime.framework` (the official
+      // `onnxruntime-c` CocoaPod). Its binary's install-name is `onnxruntime`,
+      // so dlopen by that bare name resolves it via @rpath and refcounts to the
+      // already-loaded framework. (There is no standalone `libonnxruntime.dylib`
+      // on iOS — a host app that statically links ORT, e.g. sherpa_onnx, strips
+      // the symbols, so process() alone can't find them; a dedicated ORT
+      // framework is required.)
+      return DynamicLibrary.open('onnxruntime');
     } else if (Platform.isLinux) {
       return DynamicLibrary.open('libonnxruntime.so');
     } else if (Platform.isWindows) {
