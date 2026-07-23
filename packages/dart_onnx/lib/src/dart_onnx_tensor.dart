@@ -88,6 +88,18 @@ class DartONNXTensor implements Finalizable {
     );
   }
 
+  /// Create an Int16 tensor (e.g. 16-bit PCM audio input).
+  factory DartONNXTensor.int16({
+    required Int16List data,
+    required List<int> shape,
+  }) {
+    return _createTensor(
+      data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+      shape,
+      ONNXTensorElementDataType.ONNX_TENSOR_ELEMENT_DATA_TYPE_INT16,
+    );
+  }
+
   /// Create an Int64 tensor.
   factory DartONNXTensor.int64({
     required Int64List data,
@@ -274,6 +286,7 @@ class DartONNXTensor implements Finalizable {
   /// - Float → [Float32List]
   /// - Double → [Float64List]
   /// - Int32 → [Int32List]
+  /// - Int16 → [Int16List]
   /// - Int64 → [Int64List]
   /// - Uint8 → [Uint8List]
   TypedData get data {
@@ -302,6 +315,8 @@ class DartONNXTensor implements Finalizable {
           return raw.cast<Double>().asTypedList(totalElements);
         case ONNXTensorElementDataType.ONNX_TENSOR_ELEMENT_DATA_TYPE_INT32:
           return raw.cast<Int32>().asTypedList(totalElements);
+        case ONNXTensorElementDataType.ONNX_TENSOR_ELEMENT_DATA_TYPE_INT16:
+          return raw.cast<Int16>().asTypedList(totalElements);
         case ONNXTensorElementDataType.ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64:
           return raw.cast<Int64>().asTypedList(totalElements);
         case ONNXTensorElementDataType.ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT8:
