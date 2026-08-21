@@ -76,6 +76,22 @@ class OrtFFI {
       }
     }
 
+    // Formal package delivery: hook/build.dart registers ORT as this code
+    // asset, and Flutter bundles/signs it with the consuming application.
+    // `_nativeOrtGetApiBase` proves the asset resolved before we open the
+    // corresponding library handle for the generated OrtBindings class.
+    try {
+      _nativeOrtGetApiBase();
+      // Native assets has already resolved and loaded the library containing
+      // this symbol into the process. Bindings can use that resident image;
+      // opening a guessed framework path is both redundant and brittle.
+      final process = DynamicLibrary.process();
+      if (_hasOrtSymbols(process)) return process;
+    } catch (_) {
+      // Keep explicit/system fallbacks for CLI development and iOS until that
+      // platform has a dedicated packaged ORT framework.
+    }
+
     // Custom fork: bind to an ONNX Runtime ALREADY loaded into this process
     // (e.g. by sherpa_onnx) instead of opening a second copy — a duplicate ORT
     // image can crash the app. DynamicLibrary.process() resolves ORT symbols
@@ -174,3 +190,9 @@ class OrtFFI {
     return '';
   }
 }
+
+@Native<Pointer<OrtApiBase> Function()>(
+  symbol: 'OrtGetApiBase',
+  assetId: 'package:dart_onnx/src/ort_library.dart',
+)
+external Pointer<OrtApiBase> _nativeOrtGetApiBase();
