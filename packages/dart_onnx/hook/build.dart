@@ -92,11 +92,11 @@ void main(List<String> args) async {
     if (!input.config.buildCodeAssets) return;
     final os = input.config.code.targetOS;
     if (os == OS.iOS) {
-      throw UnsupportedError(
-        'dart_onnx native assets do not yet package iOS. '
-        'Use a dedicated ONNX Runtime framework until the iOS dynamic '
-        'artifact is published.',
-      );
+      // iOS builds ORT statically through the app/plugin toolchain and FFI
+      // resolves it with DynamicLibrary.process(). Emitting no code asset here
+      // preserves that supported path; FAILING the hook made every iOS app
+      // unbuildable even when it never used generic ONNX inference.
+      return;
     }
     final key = '${os.name}-${input.config.code.targetArchitecture.name}';
     final artifact = _artifacts[key];
