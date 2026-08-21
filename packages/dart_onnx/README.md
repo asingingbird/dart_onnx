@@ -22,18 +22,17 @@ flutter pub add dart_onnx
 
 ## Setup
 
-The `dart_onnx` package uses Dart FFI to bind to the ONNX Runtime C library (`libonnxruntime`). 
-You must install the ONNX Runtime dynamic library on your system before running models.
+`dart_onnx` bundles a pinned, SHA-256-verified ONNX Runtime through Dart's
+native-assets build hook on macOS, Android, Linux, and Windows. Consuming apps
+do not need Homebrew, PATH changes, or a second plugin to provide ORT.
+
+iOS packaging is not yet provided by this package. Use a dedicated ONNX Runtime
+framework there until the dynamic iOS artifact is added.
 
 ### macOS
 
-Install via Homebrew:
-
-```bash
-brew install onnxruntime
-```
-
-If Dart cannot find the library automatically (e.g., throwing `Failed to load dynamic library 'libonnxruntime.dylib'`), you can supply the path to the library by setting the `DART_ONNX_LIB_PATH` environment variable:
+For local loader debugging only, an explicit runtime can override the bundled
+asset:
 
 ```bash
 export DART_ONNX_LIB_PATH=/opt/homebrew/lib/libonnxruntime.dylib
