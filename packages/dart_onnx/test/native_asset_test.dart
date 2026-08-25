@@ -68,4 +68,15 @@ void main() {
       },
     );
   });
+
+  test('iOS emits no asset because the app supplies its framework', () async {
+    await testCodeBuildHook(
+      mainMethod: build_hook.main,
+      targetOS: OS.iOS,
+      targetArchitecture: Architecture.arm64,
+      check: (input, output) {
+        expect(output.assets.code, isEmpty);
+      },
+    );
+  });
 }
