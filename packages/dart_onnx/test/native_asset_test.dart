@@ -17,19 +17,19 @@ void main() {
     expect(env.ortVersion, startsWith('1.27.'));
   });
 
-  test('external runtime mode emits no competing ONNX Runtime asset', () async {
+  test('external platforms emit no competing ONNX Runtime asset', () async {
     final userDefines = PackageUserDefines(
       workspacePubspec: PackageUserDefinesSource(
-        defines: const {'runtime': 'external'},
+        defines: const {
+          'external_platforms': ['android', 'linux', 'windows'],
+        },
         basePath: Uri.directory('.'),
       ),
     );
 
     for (final (os, architecture) in [
       (OS.android, Architecture.arm64),
-      (OS.iOS, Architecture.arm64),
       (OS.linux, Architecture.x64),
-      (OS.macOS, Architecture.arm64),
       (OS.windows, Architecture.x64),
     ]) {
       await testCodeBuildHook(
@@ -46,5 +46,26 @@ void main() {
         },
       );
     }
+  });
+
+  test('macOS keeps its bundled ORT when Sherpa hides OrtGetApiBase', () async {
+    final userDefines = PackageUserDefines(
+      workspacePubspec: PackageUserDefinesSource(
+        defines: const {
+          'external_platforms': ['android', 'linux', 'windows'],
+        },
+        basePath: Uri.directory('.'),
+      ),
+    );
+
+    await testCodeBuildHook(
+      mainMethod: build_hook.main,
+      targetOS: OS.macOS,
+      targetArchitecture: Architecture.arm64,
+      userDefines: userDefines,
+      check: (input, output) {
+        expect(output.assets.code, hasLength(1));
+      },
+    );
   });
 }
