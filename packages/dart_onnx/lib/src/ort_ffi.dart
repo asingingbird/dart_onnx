@@ -83,6 +83,22 @@ class OrtFFI {
     // asset and depend on this path.
     final process = DynamicLibrary.process();
     if (_hasOrtSymbols(process)) return process;
+    // Formal standalone package delivery: hook/build.dart registers ORT as a
+    // code asset and Flutter bundles/signs it with the consuming application.
+    try {
+      _nativeOrtGetApiBase();
+      final bundled = DynamicLibrary.process();
+      if (_hasOrtSymbols(bundled)) return bundled;
+    } catch (_) {
+      // Keep explicit/system fallbacks for CLI development and iOS until that
+      // platform has a dedicated packaged ORT framework.
+    }
+
+    // External-runtime consumers have no code asset. Reopen the canonical
+    // module that another plugin packaged; loaders refcount an already-loaded
+    // image instead of creating a second one. This comes AFTER the native
+    // asset so macOS standalone/Buddy builds prefer dart_onnx's verified
+    // bundle rather than an unrelated Homebrew dylib.
     for (final name in const [
       'libonnxruntime.1.27.1.dylib',
       'libonnxruntime.dylib',
@@ -93,17 +109,6 @@ class OrtFFI {
         final lib = DynamicLibrary.open(name);
         if (_hasOrtSymbols(lib)) return lib;
       } catch (_) {}
-    }
-
-    // Formal standalone package delivery: hook/build.dart registers ORT as a
-    // code asset and Flutter bundles/signs it with the consuming application.
-    try {
-      _nativeOrtGetApiBase();
-      final bundled = DynamicLibrary.process();
-      if (_hasOrtSymbols(bundled)) return bundled;
-    } catch (_) {
-      // Keep explicit/system fallbacks for CLI development and iOS until that
-      // platform has a dedicated packaged ORT framework.
     }
 
     // Custom fork: bind to an ONNX Runtime ALREADY loaded into this process
