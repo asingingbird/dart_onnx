@@ -25,14 +25,26 @@ void main() {
       ),
     );
 
-    await testCodeBuildHook(
-      mainMethod: build_hook.main,
-      targetOS: OS.linux,
-      targetArchitecture: Architecture.x64,
-      userDefines: userDefines,
-      check: (input, output) {
-        expect(output.assets.code, isEmpty);
-      },
-    );
+    for (final (os, architecture) in [
+      (OS.android, Architecture.arm64),
+      (OS.iOS, Architecture.arm64),
+      (OS.linux, Architecture.x64),
+      (OS.macOS, Architecture.arm64),
+      (OS.windows, Architecture.x64),
+    ]) {
+      await testCodeBuildHook(
+        mainMethod: build_hook.main,
+        targetOS: os,
+        targetArchitecture: architecture,
+        userDefines: userDefines,
+        check: (input, output) {
+          expect(
+            output.assets.code,
+            isEmpty,
+            reason: '${os.name}-$architecture',
+          );
+        },
+      );
+    }
   });
 }
