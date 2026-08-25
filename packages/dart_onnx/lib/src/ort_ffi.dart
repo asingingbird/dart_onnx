@@ -1,5 +1,6 @@
 import 'dart:ffi';
 import 'dart:io';
+
 import 'package:ffi/ffi.dart';
 
 import 'ffi/ort_bindings.dart';
@@ -76,17 +77,30 @@ class OrtFFI {
       }
     }
 
-    // Formal package delivery: hook/build.dart registers ORT as this code
-    // asset, and Flutter bundles/signs it with the consuming application.
-    // `_nativeOrtGetApiBase` proves the asset resolved before we open the
-    // corresponding library handle for the generated OrtBindings class.
+    // Reuse an ONNX Runtime already loaded by the host (for example sherpa)
+    // before resolving dart_onnx's bundled native asset. Consumers selecting
+    // `hooks.user_defines.dart_onnx.runtime: external` intentionally emit no
+    // asset and depend on this path.
+    final process = DynamicLibrary.process();
+    if (_hasOrtSymbols(process)) return process;
+    for (final name in const [
+      'libonnxruntime.1.27.1.dylib',
+      'libonnxruntime.dylib',
+      'libonnxruntime.so',
+      'onnxruntime.dll',
+    ]) {
+      try {
+        final lib = DynamicLibrary.open(name);
+        if (_hasOrtSymbols(lib)) return lib;
+      } catch (_) {}
+    }
+
+    // Formal standalone package delivery: hook/build.dart registers ORT as a
+    // code asset and Flutter bundles/signs it with the consuming application.
     try {
       _nativeOrtGetApiBase();
-      // Native assets has already resolved and loaded the library containing
-      // this symbol into the process. Bindings can use that resident image;
-      // opening a guessed framework path is both redundant and brittle.
-      final process = DynamicLibrary.process();
-      if (_hasOrtSymbols(process)) return process;
+      final bundled = DynamicLibrary.process();
+      if (_hasOrtSymbols(bundled)) return bundled;
     } catch (_) {
       // Keep explicit/system fallbacks for CLI development and iOS until that
       // platform has a dedicated packaged ORT framework.
@@ -97,19 +111,6 @@ class OrtFFI {
     // image can crash the app. DynamicLibrary.process() resolves ORT symbols
     // from the resident image when they're globally visible; fall back to
     // re-opening the versioned lib by name (dlopen refcounts → same instance).
-    final proc = DynamicLibrary.process();
-    if (_hasOrtSymbols(proc)) return proc;
-    for (final name in const [
-      'libonnxruntime.1.24.4.dylib',
-      'libonnxruntime.dylib',
-      'libonnxruntime.so',
-    ]) {
-      try {
-        final lib = DynamicLibrary.open(name);
-        if (_hasOrtSymbols(lib)) return lib;
-      } catch (_) {}
-    }
-
     try {
       return _openPlatformLibrary();
     } on ArgumentError {

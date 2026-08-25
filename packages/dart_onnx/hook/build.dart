@@ -90,6 +90,7 @@ const _artifacts = <String, _Artifact>{
 void main(List<String> args) async {
   await build(args, (input, output) async {
     if (!input.config.buildCodeAssets) return;
+    if (input.userDefines['runtime'] == 'external') return;
     final os = input.config.code.targetOS;
     if (os == OS.iOS) {
       // iOS builds ORT statically through the app/plugin toolchain and FFI
@@ -136,9 +137,8 @@ Future<File> _cachedLibrary(_Artifact artifact, String outputName) async {
   if (await library.exists()) return library;
   await root.create(recursive: true);
 
-  final lock = await File(
-    p.join(root.path, '.lock'),
-  ).open(mode: FileMode.append);
+  final lock = await File(p.join(root.path, '.lock'))
+      .open(mode: FileMode.append);
   try {
     await lock.lock(FileLock.blockingExclusive);
     if (await library.exists()) return library;
